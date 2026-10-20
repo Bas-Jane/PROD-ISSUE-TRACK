@@ -57,12 +57,3 @@ body:
       placeholder: Explain the issue and expected outcome
     validations:
       required: true
-
-  - type: textarea
-    id: acceptance-criteria
-    attributes:
-      label: Acceptance Criteria
-      description: Define when this issue is resolved
-      placeholder: Describe the expected results
-    validations:
-      required: false
