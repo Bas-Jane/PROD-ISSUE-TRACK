@@ -1,0 +1,111 @@
+name: Production Incident
+description: Report and track a production incident affecting a core network function
+title: "[Prod][Incident] "
+labels:
+  - "Category::Production-Incident"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Complete the incident details. Do not include credentials, subscriber identifiers, or unredacted logs.
+        Severity and priority are distinct: severity describes impact; priority describes response urgency.
+  - type: dropdown
+    id: affected-nf
+    attributes:
+      label: Network Function(s)
+      multiple: true
+      options:
+        - AMFMME
+        - SMF
+        - UPF
+        - CSDB
+        - NRF
+        - NSSF
+        - USM
+        - Platform
+        - Other (describe below)
+    validations:
+      required: true
+  - type: input
+    id: other-nf
+    attributes:
+      label: Other network function (if selected)
+      placeholder: Specify other affected component
+  - type: dropdown
+    id: software-version
+    attributes:
+      label: Software Version
+      options:
+        - 25A P5
+        - 25A P7
+        - 26A P1
+        - Other (specify below)
+    validations:
+      required: true
+  - type: input
+    id: other-version
+    attributes:
+      label: Other software version (if selected)
+      placeholder: Software build or package identifier
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Production Severity
+      options:
+        - S1
+        - S2
+        - S3
+        - S4
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Response priority, separate from production impact
+      options:
+        - P1
+        - P2
+        - P3
+        - P4
+    validations:
+      required: true
+  - type: input
+    id: first-observed
+    attributes:
+      label: First Observed (UTC)
+      description: Use YYYY-MM-DD HH:MM if known
+      placeholder: 2026-10-20 14:30
+  - type: textarea
+    id: incident-summary
+    attributes:
+      label: Incident Summary and Customer Impact
+      description: Describe symptoms, scope, affected services, and impact
+      placeholder: What failed, when it started, and what is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Observations and Reproduction Steps
+      description: Include sanitized error codes, trigger, trace or test steps
+  - type: textarea
+    id: actions
+    attributes:
+      label: Troubleshooting and Mitigation
+      description: Actions taken, workaround, rollback and verification results
+  - type: textarea
+    id: resolution
+    attributes:
+      label: Root Cause and Resolution
+      description: Update this section when resolved; include permanent fix and verification
+  - type: input
+    id: gitlab-link
+    attributes:
+      label: GitLab Link
+      placeholder: https://... (if available)
+  - type: input
+    id: btsp-link
+    attributes:
+      label: BTSP Link
+      placeholder: https://... (if available)
