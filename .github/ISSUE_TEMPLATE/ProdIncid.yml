@@ -26,11 +26,6 @@ body:
         - Other (describe below)
     validations:
       required: true
-  - type: input
-    id: other-nf
-    attributes:
-      label: Other network function (if selected)
-      placeholder: Specify other affected component
   - type: dropdown
     id: software-version
     attributes:
