@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: "Existing issue number to synchronize (e.g. 5)"
+        description: 'Issue number to synchronize (e.g. 7)'
         required: true
         type: number
 
@@ -17,96 +17,71 @@ jobs:
   sync-severity:
     runs-on: ubuntu-latest
     steps:
-      - name: Apply severity and category labels
+      - name: Synchronize Production Incident labels
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { owner, repo } = context.repo;
+            const {owner, repo} = context.repo;
             const issue_number = context.eventName === 'workflow_dispatch'
               ? Number(context.payload.inputs.issue_number)
               : context.payload.issue.number;
-            if (!Number.isInteger(issue_number) || issue_number < 1) {
-              throw new Error('Invalid issue number');
+            if (!Number.isInteger(issue_number) || issue_number <= 0) {
+              throw new Error('A valid issue number is required.');
             }
-
-            // Fetch fresh issue data (not an older webhook snapshot).
-            const { data: issue } = await github.rest.issues.get({
-              owner, repo, issue_number
-            });
-            if (issue.pull_request) {
-              core.info('Skipping pull request');
-              return;
-            }
-
+            const {data: issue} = await github.rest.issues.get({owner, repo, issue_number});
+            if (issue.pull_request) return;
             const body = (issue.body || '').replace(/\r\n/g, '\n');
-            const isIncident = /^\[Prod\]\[Incident\]/i.test(issue.title.trim())
-              && /^### Production Severity\s*$/m.test(body);
+            const isIncident = /^\[Prod\]\[Incident\]/i.test(issue.title.trim()) &&
+              /^### Production Severity\s*$/m.test(body);
             if (!isIncident) {
-              core.info(`Issue #${issue_number} is not a production incident form; skipping.`);
+              core.info(`Skipping non-production incident #${issue_number}`);
               return;
             }
-
             const match = body.match(/^### Production Severity[ \t]*\n+(?:[ \t]*\n)*[ \t]*(S[1-4])[ \t]*(?=\n|$)/m);
             if (!match) {
-              core.warning(`Issue #${issue_number} has no recognizable S1-S4 severity.`);
+              core.warning(`No S1-S4 value detected in #${issue_number}`);
               return;
             }
-            const desired = `Prod::Sev${match[1].slice(1)}`;
+            const wantedSeverity = `Prod::Sev${match[1].slice(1)}`;
             const category = 'Production-Incident';
-            const obsoleteCategory = 'Category::Production-Incident';
-            const allSeverityLabels = [
+            const oldCategory = 'Category::Production-Incident';
+            const severityLabels = new Set([
               'Prod::Sev1', 'Prod::Sev2', 'Prod::Sev3', 'Prod::Sev4',
               'Prod::S1', 'Prod::S2', 'Prod::S3', 'Prod::S4'
-            ];
-
-            async function ensureLabel(name, color, description) {
+            ]);
+            const colors = {
+              'Prod::Sev1': 'B60205',
+              'Prod::Sev2': 'D93F0B',
+              'Prod::Sev3': 'FBCA04',
+              'Prod::Sev4': '0E8A16'
+            };
+            async function ensureLabel(name, color) {
               try {
-                await github.rest.issues.getLabel({owner, repo, name});
-              } catch (error) {
-                if (error.status !== 404) throw error;
+                const {data: existing} = await github.rest.issues.getLabel({owner, repo, name});
+                if (existing.color.toUpperCase() !== color.toUpperCase()) {
+                  await github.rest.issues.updateLabel({owner, repo, name, color});
+                  core.info(`Updated ${name} color to #${color}`);
+                }
+              } catch (err) {
+                if (err.status !== 404) throw err;
                 try {
-                  await github.rest.issues.createLabel({
-                    owner, repo, name, color, description
-                  });
-                  core.info(`Created label ${name}`);
-                } catch (createError) {
-                  if (createError.status !== 422) throw createError;
-                  // Label already created by a simultaneous run.
+                  await github.rest.issues.createLabel({owner, repo, name, color});
+                } catch (createErr) {
+                  if (createErr.status !== 422) throw createErr;
                 }
               }
             }
+            await ensureLabel(wantedSeverity, colors[wantedSeverity]);
+            await ensureLabel(category, 'F28C28'); // orange, including existing labels
 
-            await ensureLabel(category, '1D76DB', 'Production incidents');
-            await ensureLabel(desired, 'B60205', `Production incident ${match[1]}`);
-
-            const old = issue.labels.map(x => typeof x === 'string' ? x : x.name);
-            for (const label of allSeverityLabels) {
-              if (label === desired || !old.includes(label)) continue;
-              try {
-                await github.rest.issues.removeLabel({
-                  owner, repo, issue_number, name: label
-                });
-                core.info(`Removed ${label}`);
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
+            const current = issue.labels.map(label => typeof label === 'string' ? label : label.name);
+            // Keep other labels; request Category first and Severity second. GitHub UI may reorder badges.
+            const unrelated = current.filter(name => !severityLabels.has(name) &&
+              name !== category && name !== oldCategory);
+            const desiredLabels = [category, wantedSeverity, ...unrelated];
+            const unchanged = current.length === desiredLabels.length &&
+              desiredLabels.every(name => current.includes(name));
+            if (!unchanged) {
+              await github.rest.issues.setLabels({owner, repo, issue_number, labels: desiredLabels});
             }
-            // Migrate the old category label without altering other labels.
-            if (old.includes(obsoleteCategory)) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner, repo, issue_number, name: obsoleteCategory
-                });
-                core.info(`Removed obsolete ${obsoleteCategory}`);
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-            }
-            const missing = [category, desired].filter(name => !old.includes(name));
-            if (missing.length) {
-              await github.rest.issues.addLabels({
-                owner, repo, issue_number, labels: missing
-              });
-            }
-            core.info(`Issue #${issue_number}: synced ${category} and ${desired}`);
+            core.info(`#${issue_number} category: ${category} (#F28C28); severity: ${wantedSeverity}`);
