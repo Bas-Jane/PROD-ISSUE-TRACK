@@ -49,12 +49,8 @@ jobs:
               'Prod::Sev1', 'Prod::Sev2', 'Prod::Sev3', 'Prod::Sev4',
               'Prod::S1', 'Prod::S2', 'Prod::S3', 'Prod::S4'
             ]);
-            const colors = {
-              'Prod::Sev1': 'B60205',
-              'Prod::Sev2': 'D93F0B',
-              'Prod::Sev3': 'FBCA04',
-              'Prod::Sev4': '0E8A16'
-            };
+            // Uniform red for all Prod::Sev labels.
+            const severityColor = 'B60205';
             async function ensureLabel(name, color) {
               try {
                 const {data: existing} = await github.rest.issues.getLabel({owner, repo, name});
@@ -71,7 +67,10 @@ jobs:
                 }
               }
             }
-            await ensureLabel(wantedSeverity, colors[wantedSeverity]);
+            // Create/recolor all four labels, including ones not selected on this issue.
+            for (const label of ['Prod::Sev1', 'Prod::Sev2', 'Prod::Sev3', 'Prod::Sev4']) {
+              await ensureLabel(label, severityColor);
+            }
             await ensureLabel(category, 'F28C28'); // orange, including existing labels
 
             const current = issue.labels.map(label => typeof label === 'string' ? label : label.name);
@@ -84,4 +83,4 @@ jobs:
             if (!unchanged) {
               await github.rest.issues.setLabels({owner, repo, issue_number, labels: desiredLabels});
             }
-            core.info(`#${issue_number} category: ${category} (#F28C28); severity: ${wantedSeverity}`);
+            core.info(`#${issue_number} category: ${category} (#F28C28); severity: ${wantedSeverity} (#B60205)`);
