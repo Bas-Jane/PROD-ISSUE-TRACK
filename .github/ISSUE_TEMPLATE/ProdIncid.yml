@@ -9,6 +9,7 @@ body:
       value: |
         Complete the incident details. 
         Severity and priority are distinct: severity describes impact; priority describes response urgency.
+        After submission, the selected Production Severity is automatically mapped to a Prod::Sev1, Prod::Sev2, Prod::Sev3 or Prod::Sev4 GitHub issue label.
   - type: dropdown
     id: affected-nf
     attributes:
