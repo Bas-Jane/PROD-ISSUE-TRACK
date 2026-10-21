@@ -1,0 +1,80 @@
+name: Apply production incident severity labels
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync-severity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync selected severity to GitHub labels
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issue = context.payload.issue;
+            const issue_number = issue.number;
+            const currentLabels = (issue.labels || []).map(label =>
+              typeof label === 'string' ? label : label.name
+            );
+
+            // Only handle incidents created with the production incident form.
+            if (!currentLabels.includes('Category::Production-Incident')) {
+              core.info('Not a production incident; skipping.');
+              return;
+            }
+
+            // Issue forms render dropdown answers as Markdown under their headings.
+            const body = (issue.body || '').replace(/\r\n/g, '\n');
+            const match = body.match(/^### Production Severity\s*\n+\s*(S[1-4])\s*(?=\n|$)/m);
+            if (!match) {
+              core.warning('No valid Production Severity (S1–S4) found in issue body.');
+              return;
+            }
+
+            const desired = `Prod::Sev${match[1].slice(1)}`;
+            const severityLabels = ['Prod::Sev1', 'Prod::Sev2', 'Prod::Sev3', 'Prod::Sev4', 'Prod::S1', 'Prod::S2', 'Prod::S3', 'Prod::S4'];
+            const { data: latestIssue } = await github.rest.issues.get({ owner, repo, issue_number });
+            const existing = latestIssue.labels.map(label =>
+              typeof label === 'string' ? label : label.name
+            );
+
+            // Create the label if it doesn't already exist in this repository.
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: desired });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              try {
+                await github.rest.issues.createLabel({
+                  owner, repo, name: desired,
+                  color: 'B60205',
+                  description: `Production incident severity ${match[1]}`
+                });
+              } catch (createError) {
+                if (createError.status !== 422) throw createError;
+                // Another workflow may have created the label concurrently.
+              }
+            }
+
+            // Remove outdated severity labels, including legacy Prod::S1–S4 labels.
+            // Keep all unrelated issue labels.
+            for (const oldLabel of severityLabels) {
+              if (oldLabel === desired || !existing.includes(oldLabel)) continue;
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name: oldLabel });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+            if (!existing.includes(desired)) {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number, labels: [desired]
+              });
+            }
+            core.info(`Issue #${issue_number}: severity label synced to ${desired}`);
