@@ -53,7 +53,8 @@ jobs:
               return;
             }
             const desired = `Prod::Sev${match[1].slice(1)}`;
-            const category = 'Category::Production-Incident';
+            const category = 'Production-Incident';
+            const obsoleteCategory = 'Category::Production-Incident';
             const allSeverityLabels = [
               'Prod::Sev1', 'Prod::Sev2', 'Prod::Sev3', 'Prod::Sev4',
               'Prod::S1', 'Prod::S2', 'Prod::S3', 'Prod::S4'
@@ -87,6 +88,17 @@ jobs:
                   owner, repo, issue_number, name: label
                 });
                 core.info(`Removed ${label}`);
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+            // Migrate the old category label without altering other labels.
+            if (old.includes(obsoleteCategory)) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number, name: obsoleteCategory
+                });
+                core.info(`Removed obsolete ${obsoleteCategory}`);
               } catch (error) {
                 if (error.status !== 404) throw error;
               }
