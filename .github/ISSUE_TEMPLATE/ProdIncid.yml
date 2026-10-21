@@ -30,6 +30,7 @@ body:
     id: software-version
     attributes:
       label: Software Version
+      multiple: true
       options:
         - 25A P5
         - 25A P7
