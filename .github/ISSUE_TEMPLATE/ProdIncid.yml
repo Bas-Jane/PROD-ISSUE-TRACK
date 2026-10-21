@@ -2,7 +2,7 @@ name: Production Incident
 description: Report and track a production incident affecting a core network function
 title: "[Prod][Incident] "
 labels:
-  - "Category::Production-Incident"
+  - "Production-Incident"
 body:
   - type: markdown
     attributes:
