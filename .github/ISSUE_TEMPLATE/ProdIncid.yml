@@ -35,6 +35,10 @@ body:
         - 25A P5
         - 25A P7
         - 26A P1
+        - 26A P2
+        - 26A P3
+        - 26A P4
+        - 26A P5
         - Other (specify below)
     validations:
       required: true
