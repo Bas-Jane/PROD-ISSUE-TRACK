@@ -42,11 +42,6 @@ body:
         - Other (specify below)
     validations:
       required: true
-  - type: input
-    id: other-version
-    attributes:
-      label: Other software version (if selected)
-      placeholder: Software build or package identifier
   - type: dropdown
     id: severity
     attributes:
