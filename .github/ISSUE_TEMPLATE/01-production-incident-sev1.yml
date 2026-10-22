@@ -1,55 +1,104 @@
-name: "Production Incident - Sev1"
-description: "Critical outage or major production service unavailability"
-title: "[Production Incident][Sev1] "
+name: Production Incident - Sev1
+description: Production incident severity S1; automatic incident and severity labels
+title: '[Prod][Incident][S1] '
 labels:
-  - "Production-Incident"
-  - "Prod::Sev1"
+- Production-Incident
+- Prod::Sev1
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Report a production incident. This form assigns Production-Incident and Prod::Sev1 automatically.
-        Do not paste credentials, personal data, access tokens, or customer identifiers.
-  - type: input
-    id: service
-    attributes:
-      label: Affected service or component
-      placeholder: "Example: AMF registration service"
-    validations:
-      required: true
-  - type: textarea
-    id: description
-    attributes:
-      label: Incident description
-      description: "What happened, and when did it start?"
-      placeholder: "Describe symptoms and timeline"
-    validations:
-      required: true
-  - type: textarea
-    id: impact
-    attributes:
-      label: Production impact
-      description: "Describe affected functionality and scope without exposing sensitive data."
-    validations:
-      required: true
-  - type: textarea
-    id: investigation
-    attributes:
-      label: Troubleshooting and evidence
-      description: "Summarize checks performed. Redact logs before pasting."
-    validations:
-      required: false
-  - type: textarea
-    id: mitigation
-    attributes:
-      label: Mitigation or resolution
-      description: "Describe mitigation, workaround, recovery, or next steps."
-    validations:
-      required: false
-  - type: input
-    id: references
-    attributes:
-      label: Related issue or change reference
-      placeholder: "Example: #123"
-    validations:
-      required: false
+- type: markdown
+  attributes:
+    value: Complete production incident details. Severity is fixed at S1 to match the automatic Prod::Sev1 label.
+      Priority is independent of severity. Do not include credentials, subscriber identifiers or unredacted logs.
+- type: dropdown
+  id: affected-nf
+  attributes:
+    label: Network Function(s)
+    multiple: true
+    options:
+    - AMFMME
+    - SMF
+    - UPF
+    - CSDB
+    - NRF
+    - NSSF
+    - USM
+    - Platform
+    - Other (describe below)
+  validations:
+    required: true
+- type: dropdown
+  id: software-version
+  attributes:
+    label: Software Version
+    multiple: true
+    options:
+    - 25A P5
+    - 25A P7
+    - 26A P1
+    - 26A P2
+    - 26A P3
+    - 26A P4
+    - 26A P5
+    - Other (specify below)
+  validations:
+    required: true
+- type: dropdown
+  id: severity
+  attributes:
+    label: Production Severity
+    description: Fixed to this incident template to prevent a label mismatch
+    options:
+    - S1
+  validations:
+    required: true
+- type: dropdown
+  id: priority
+  attributes:
+    label: Priority
+    description: Response urgency, separate from service impact
+    options:
+    - P1
+    - P2
+    - P3
+    - P4
+  validations:
+    required: true
+- type: input
+  id: first-observed
+  attributes:
+    label: First Observed (UTC)
+    description: Use YYYY-MM-DD HH:MM if known
+    placeholder: YYYY-MM-DD HH:MM
+- type: textarea
+  id: incident-summary
+  attributes:
+    label: Incident Summary and Customer Impact
+    description: Describe symptoms, scope, affected services, and impact
+    placeholder: What failed, when it started, and what is affected?
+  validations:
+    required: true
+- type: textarea
+  id: reproduction
+  attributes:
+    label: Observations and Reproduction Steps
+    description: Include sanitized error codes, triggers, traces or test steps
+- type: textarea
+  id: actions
+  attributes:
+    label: Troubleshooting and Mitigation
+    description: Actions taken, workaround, rollback and verification results
+- type: textarea
+  id: resolution
+  attributes:
+    label: Root Cause and Resolution
+    description: Update when resolved; include permanent fix and verification
+- type: input
+  id: gitlab-link
+  attributes:
+    label: GitLab Link
+    placeholder: https://... (if available)
+- type: input
+  id: btsp-link
+  attributes:
+    label: BTSP Link
+    placeholder: https://... (if available)
