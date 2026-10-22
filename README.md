@@ -1,4 +1,4 @@
-# Production Incident GitHub App — runner-free auto-labeling
+# Production Incident auto-labeling
 
 This standalone Python service receives GitHub App webhooks and synchronizes issue labels using GitHub REST API. **No GitHub Actions workflow or GitHub-hosted runner is used.** It works across multiple repositories in which the App is installed.
 
