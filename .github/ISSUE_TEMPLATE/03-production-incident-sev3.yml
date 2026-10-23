@@ -5,10 +5,6 @@ labels:
 - Production-Incident
 - Prod::Sev3
 body:
-- type: markdown
-  attributes:
-    value: Complete production incident details. Severity is fixed at S3 to match the automatic Prod::Sev3 label.
-      Priority is independent of severity. Do not include credentials, subscriber identifiers or unredacted logs.
 - type: dropdown
   id: affected-nf
   attributes:
